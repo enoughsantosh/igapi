@@ -38,6 +38,5 @@ async def download_reel(url: str = Query(..., description="Instagram reel URL"))
     except Exception as e:
         return {"error": str(e)}
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Required for Vercel to recognize the app
+api = app
