@@ -1,2 +1,4 @@
-instaloader
 fastapi
+uvicorn
+instaloader
+vercel-fastapi
