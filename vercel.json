@@ -1,7 +1,16 @@
 {
     "version": 2,
+    "builds": [
+        {
+            "src": "api/instagram.py",
+            "use": "@vercel/python"
+        }
+    ],
     "routes": [
-        { "src": "/(.*)", "dest": "api/instagram.py" }
+        {
+            "src": "/(.*)",
+            "dest": "api/instagram.py"
+        }
     ],
     "functions": {
         "api/instagram.py": {
