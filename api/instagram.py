@@ -1,10 +1,10 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import instaloader
-from vercel_fastapi import VercelMiddleware  # Required for Vercel
 
 app = FastAPI()
-app.add_middleware(VercelMiddleware)  # Vercel middleware
+
+# Enable CORS for frontend to access backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,6 +13,7 @@ app.add_middleware(
 )
 
 def extract_video_url(reel_url: str):
+    """Extract video URL from Instagram reel"""
     try:
         L = instaloader.Instaloader()
         shortcode = reel_url.split("/")[-2]  # Extract shortcode from URL
@@ -27,6 +28,7 @@ def extract_video_url(reel_url: str):
 
 @app.get("/download")
 async def download_reel(url: str = Query(..., description="Instagram reel URL")):
+    """API endpoint to get Instagram reel video URL"""
     try:
         video_url = extract_video_url(url)
         if video_url:
