@@ -1,52 +1,39 @@
-from http.server import BaseHTTPRequestHandler
-from urllib.parse import parse_qs, urlparse
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 import instaloader
-import json
 
-def extract_video_url(reel_url):
-    # Create an instaloader object
-    L = instaloader.Instaloader()
-    
-    # Get the post object from the reel URL
-    shortcode = reel_url.split("/")[-2]
-    post = instaloader.Post.from_shortcode(L.context, shortcode)
-    
-    if post.is_video:
-        return post.video_url
-    else:
-        raise ValueError("This is not a video post.")
+app = FastAPI()
 
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        # Parse query parameters
-        query_params = parse_qs(urlparse(self.path).query)
-        url = query_params.get('url', [None])[0]
+# Enable CORS for frontend to access backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-        # Set response headers
-        self.send_response(200 if url else 400)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header("Access-Control-Allow-Origin", "*")  # Allow requests from any origin
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")  # Allow GET and OPTIONS methods
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")  # Allow Content-Type header
-        self.end_headers()
+def extract_video_url(reel_url: str):
+    """Extract video URL from Instagram reel"""
+    try:
+        L = instaloader.Instaloader()
+        shortcode = reel_url.split("/")[-2]  # Extract shortcode from URL
+        post = instaloader.Post.from_shortcode(L.context, shortcode)
 
-        if not url:
-            response = {"error": "No URL provided"}
-            self.wfile.write(json.dumps(response).encode())
-            return
+        if post.is_video:
+            return post.video_url
+        else:
+            return None
+    except Exception as e:
+        raise ValueError(f"Failed to fetch video: {str(e)}")
 
-        try:
-            video_url = extract_video_url(url)
-            response = {"video_url": video_url}
-        except Exception as e:
-            response = {"error": str(e)}
-
-        self.wfile.write(json.dumps(response).encode())
-
-    def do_OPTIONS(self):
-        # Handle preflight CORS requests
-        self.send_response(200)
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
-        self.end_headers()
+@app.get("/download")
+async def download_reel(url: str = Query(..., description="Instagram reel URL")):
+    """API endpoint to get Instagram reel video URL"""
+    try:
+        video_url = extract_video_url(url)
+        if video_url:
+            return {"video_url": video_url}
+        else:
+            return {"error": "This is not a video post."}
+    except Exception as e:
+        return {"error": str(e)}
